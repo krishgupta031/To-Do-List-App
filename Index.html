@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TASKFORGE</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --card: #16161f;
+    --border: #2a2a3a;
+    --accent: #ff4d6d;
+    --accent2: #7b61ff;
+    --accent3: #00d4aa;
+    --text: #e8e8f0;
+    --muted: #5a5a78;
+    --done-bg: #0d1f1b;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 48px 16px 80px;
+    overflow-x: hidden;
+  }
+
+  /* Animated background orbs */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(90px);
+    pointer-events: none;
+    z-index: 0;
+    animation: drift 14s ease-in-out infinite alternate;
+  }
+  .orb1 { width: 420px; height: 420px; background: rgba(255,77,109,0.12); top: -100px; left: -100px; animation-delay: 0s; }
+  .orb2 { width: 360px; height: 360px; background: rgba(123,97,255,0.10); bottom: -80px; right: -80px; animation-delay: -5s; }
+  .orb3 { width: 200px; height: 200px; background: rgba(0,212,170,0.09); top: 50%; left: 60%; animation-delay: -9s; }
+
+  @keyframes drift {
+    from { transform: translate(0, 0) scale(1); }
+    to   { transform: translate(30px, 40px) scale(1.08); }
+  }
+
+  /* Grid overlay */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 640px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  header {
+    margin-bottom: 40px;
+  }
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(52px, 12vw, 80px);
+    letter-spacing: 4px;
+    line-height: 0.9;
+    background: linear-gradient(135deg, #ff4d6d 0%, #ff8c42 50%, #ff4d6d 100%);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: gradShift 5s ease infinite;
+  }
+  @keyframes gradShift {
+    0%,100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  .tagline {
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-top: 6px;
+    font-weight: 300;
+  }
+
+  /* Stats bar */
+  .stats {
+    display: flex;
+    gap: 24px;
+    margin-top: 24px;
+    padding: 16px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+  .stats::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2), var(--accent3));
+  }
+  .stat { display: flex; flex-direction: column; gap: 2px; }
+  .stat-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 2px;
+    line-height: 1;
+    color: var(--text);
+    transition: color 0.3s;
+  }
+  .stat-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+  .stat:nth-child(1) .stat-num { color: var(--text); }
+  .stat:nth-child(2) .stat-num { color: var(--accent3); }
+  .stat:nth-child(3) .stat-num { color: var(--accent); }
+
+  /* Progress */
+  .progress-wrap {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .progress-ring {
+    width: 52px; height: 52px;
+    transform: rotate(-90deg);
+  }
+  .progress-ring circle {
+    fill: none;
+    stroke-width: 4;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.6s cubic-bezier(0.4,0,0.2,1);
+  }
+  .ring-bg { stroke: var(--border); }
+  .ring-fill { stroke: var(--accent3); stroke-dasharray: 132; stroke-dashoffset: 132; }
+  .progress-pct {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    color: var(--muted);
+    position: absolute;
+  }
+  .progress-wrap-inner { position: relative; display: flex; align-items: center; justify-content: center; }
+
+  /* Input area */
+  .input-section {
+    margin-bottom: 28px;
+  }
+  .input-row {
+    display: flex;
+    gap: 10px;
+  }
+  .input-field {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 18px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .input-field::placeholder { color: var(--muted); }
+  .input-field:focus {
+    border-color: var(--accent2);
+    box-shadow: 0 0 0 3px rgba(123,97,255,0.12);
+  }
+
+  .priority-select {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--muted);
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .priority-select:focus { border-color: var(--accent2); }
+
+  .add-btn {
+    background: linear-gradient(135deg, var(--accent), #c0392b);
+    border: none;
+    border-radius: 12px;
+    padding: 14px 22px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 2px;
+    color: white;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s, filter 0.15s;
+    white-space: nowrap;
+    box-shadow: 0 4px 20px rgba(255,77,109,0.3);
+  }
+  .add-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(255,77,109,0.4); filter: brightness(1.1); }
+  .add-btn:active { transform: translateY(0); }
+
+  /* Filter tabs */
+  .filters {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .filter-btn {
+    padding: 7px 16px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .filter-btn:hover { border-color: var(--accent2); color: var(--text); }
+  .filter-btn.active {
+    background: var(--accent2);
+    border-color: var(--accent2);
+    color: white;
+  }
+
+  /* Task list */
+  .tasks { display: flex; flex-direction: column; gap: 10px; }
+
+  /* Task card */
+  .task {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    cursor: default;
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s, opacity 0.3s;
+    animation: slideIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
+    position: relative;
+    overflow: hidden;
+  }
+  .task::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    border-radius: 3px 0 0 3px;
+    background: var(--task-color, var(--muted));
+    transition: width 0.3s;
+  }
+  .task:hover { transform: translateX(4px); box-shadow: 0 4px 24px rgba(0,0,0,0.3); border-color: #3a3a52; }
+  .task:hover::before { width: 5px; }
+
+  .task.done {
+    background: var(--done-bg);
+    border-color: #1a2e28;
+    opacity: 0.7;
+  }
+  .task.done .task-text { text-decoration: line-through; color: var(--muted); }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(-20px) scale(0.97); }
+    to   { opacity: 1; transform: translateX(0) scale(1); }
+  }
+
+  @keyframes fadeOut {
+    to { opacity: 0; transform: scale(0.95) translateX(20px); }
+  }
+  .task.removing { animation: fadeOut 0.3s forwards; }
+
+  /* Priority colors */
+  .task[data-p="high"]   { --task-color: var(--accent); }
+  .task[data-p="medium"] { --task-color: #f0a500; }
+  .task[data-p="low"]    { --task-color: var(--accent3); }
+
+  /* Checkbox */
+  .check-wrap {
+    flex-shrink: 0;
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    border: 2px solid var(--task-color, var(--border));
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+    margin-top: 1px;
+  }
+  .check-wrap:hover { transform: scale(1.1); }
+  .check-wrap.checked {
+    background: var(--accent3);
+    border-color: var(--accent3);
+  }
+  .checkmark {
+    width: 12px; height: 12px;
+    stroke: white;
+    stroke-width: 2.5;
+    fill: none;
+    stroke-dasharray: 20;
+    stroke-dashoffset: 20;
+    transition: stroke-dashoffset 0.25s ease;
+  }
+  .check-wrap.checked .checkmark { stroke-dashoffset: 0; }
+
+  .task-body { flex: 1; min-width: 0; }
+  .task-text {
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--text);
+    font-weight: 400;
+    word-break: break-word;
+    transition: color 0.3s;
+  }
+  .task-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 6px;
+  }
+  .task-time {
+    font-size: 11px;
+    color: var(--muted);
+    font-style: italic;
+    font-weight: 300;
+  }
+  .priority-badge {
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-weight: 500;
+  }
+  .badge-high   { background: rgba(255,77,109,0.15); color: var(--accent); }
+  .badge-medium { background: rgba(240,165,0,0.15);  color: #f0a500; }
+  .badge-low    { background: rgba(0,212,170,0.15);  color: var(--accent3); }
+
+  /* Delete button */
+  .del-btn {
+    flex-shrink: 0;
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--muted);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.15s;
+    opacity: 0;
+  }
+  .task:hover .del-btn { opacity: 1; }
+  .del-btn:hover { background: rgba(255,77,109,0.15); color: var(--accent); border-color: rgba(255,77,109,0.3); transform: scale(1.1); }
+
+  /* Empty state */
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+    display: none;
+  }
+  .empty-icon {
+    font-size: 48px;
+    margin-bottom: 14px;
+    animation: float 3s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  .empty h3 { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 3px; margin-bottom: 6px; color: #3a3a52; }
+  .empty p { font-size: 13px; }
+
+  /* Clear done button */
+  .clear-btn {
+    display: none;
+    margin-top: 16px;
+    width: 100%;
+    padding: 10px;
+    background: transparent;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .clear-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(255,77,109,0.04); }
+
+  /* Confetti burst */
+  .confetti-burst {
+    position: fixed;
+    pointer-events: none;
+    z-index: 100;
+  }
+  .conf-dot {
+    position: absolute;
+    width: 7px; height: 7px;
+    border-radius: 2px;
+    animation: confFly 0.7s ease-out forwards;
+  }
+  @keyframes confFly {
+    0%   { transform: translate(0,0) rotate(0deg) scale(1); opacity: 1; }
+    100% { transform: translate(var(--tx), var(--ty)) rotate(var(--rot)) scale(0.3); opacity: 0; }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+
+<div class="container">
+  <header>
+    <div class="logo">TASKFORGE</div>
+    <div class="tagline">Forge your day, one task at a time</div>
+    <div class="stats">
+      <div class="stat">
+        <span class="stat-num" id="total-num">0</span>
+        <span class="stat-label">Total</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num" id="done-num">0</span>
+        <span class="stat-label">Done</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num" id="left-num">0</span>
+        <span class="stat-label">Left</span>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-wrap-inner">
+          <svg class="progress-ring">
+            <circle class="ring-bg" cx="26" cy="26" r="21"/>
+            <circle class="ring-fill" id="ring-fill" cx="26" cy="26" r="21"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="input-section">
+    <div class="input-row">
+      <input class="input-field" id="task-input" type="text" placeholder="What needs to be forged today?" maxlength="200">
+      <select class="priority-select" id="priority-select">
+        <option value="medium">⚡ Med</option>
+        <option value="high">🔥 High</option>
+        <option value="low">🌿 Low</option>
+      </select>
+      <button class="add-btn" id="add-btn">ADD</button>
+    </div>
+  </div>
+
+  <div class="filters">
+    <button class="filter-btn active" data-filter="all">All</button>
+    <button class="filter-btn" data-filter="active">Active</button>
+    <button class="filter-btn" data-filter="done">Done</button>
+    <button class="filter-btn" data-filter="high">🔥 High</button>
+  </div>
+
+  <div class="tasks" id="task-list"></div>
+  <div class="empty" id="empty-state">
+    <div class="empty-icon">⚒️</div>
+    <h3>Nothing here yet</h3>
+    <p>Add your first task above and start forging!</p>
+  </div>
+  <button class="clear-btn" id="clear-btn">✕ Clear completed tasks</button>
+</div>
+
+<script>
+  let tasks = JSON.parse(localStorage.getItem('taskforge') || '[]');
+  let filter = 'all';
+
+  const taskList  = document.getElementById('task-list');
+  const input     = document.getElementById('task-input');
+  const addBtn    = document.getElementById('add-btn');
+  const clearBtn  = document.getElementById('clear-btn');
+  const emptyEl   = document.getElementById('empty-state');
+  const ringFill  = document.getElementById('ring-fill');
+  const totalNum  = document.getElementById('total-num');
+  const doneNum   = document.getElementById('done-num');
+  const leftNum   = document.getElementById('left-num');
+  const pSelect   = document.getElementById('priority-select');
+
+  function save() { localStorage.setItem('taskforge', JSON.stringify(tasks)); }
+
+  function formatTime(ts) {
+    const d = new Date(ts);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) +
+           ' · ' + d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  }
+
+  function updateStats() {
+    const total = tasks.length;
+    const done  = tasks.filter(t => t.done).length;
+    const left  = total - done;
+    totalNum.textContent = total;
+    doneNum.textContent  = done;
+    leftNum.textContent  = left;
+    const pct = total ? Math.round((done / total) * 100) : 0;
+    const circ = 2 * Math.PI * 21;
+    ringFill.style.strokeDashoffset = circ - (pct / 100) * circ;
+    clearBtn.style.display = done > 0 ? 'block' : 'none';
+  }
+
+  function getFiltered() {
+    return tasks.filter(t => {
+      if (filter === 'active') return !t.done;
+      if (filter === 'done')   return t.done;
+      if (filter === 'high')   return t.priority === 'high';
+      return true;
+    });
+  }
+
+  function render() {
+    const filtered = getFiltered();
+    taskList.innerHTML = '';
+
+    if (filtered.length === 0) {
+      emptyEl.style.display = 'block';
+    } else {
+      emptyEl.style.display = 'none';
+      filtered.forEach((t, i) => {
+        const el = document.createElement('div');
+        el.className = 'task' + (t.done ? ' done' : '');
+        el.dataset.id = t.id;
+        el.dataset.p = t.priority;
+        el.style.animationDelay = (i * 0.04) + 's';
+        el.innerHTML = `
+          <div class="check-wrap ${t.done ? 'checked' : ''}" onclick="toggleTask('${t.id}', event)">
+            <svg class="checkmark" viewBox="0 0 14 10">
+              <polyline points="1,5 5,9 13,1"/>
+            </svg>
+          </div>
+          <div class="task-body">
+            <div class="task-text">${escHtml(t.text)}</div>
+            <div class="task-meta">
+              <span class="task-time">${formatTime(t.created)}</span>
+              <span class="priority-badge badge-${t.priority}">${t.priority}</span>
+            </div>
+          </div>
+          <button class="del-btn" onclick="deleteTask('${t.id}')" title="Delete">×</button>
+        `;
+        taskList.appendChild(el);
+      });
+    }
+    updateStats();
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function addTask() {
+    const text = input.value.trim();
+    if (!text) { input.focus(); input.style.animation = 'none'; setTimeout(()=>{ input.style.animation=''; }, 10); return; }
+    const task = { id: Date.now().toString(), text, priority: pSelect.value, done: false, created: Date.now() };
+    tasks.unshift(task);
+    save();
+    input.value = '';
+    input.focus();
+    render();
+    // Flash add button
+    addBtn.style.filter = 'brightness(1.4)';
+    setTimeout(() => addBtn.style.filter = '', 200);
+  }
+
+  function toggleTask(id, event) {
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+    task.done = !task.done;
+    save();
+    if (task.done) confetti(event);
+    render();
+  }
+
+  function deleteTask(id) {
+    const el = document.querySelector(`.task[data-id="${id}"]`);
+    if (el) {
+      el.classList.add('removing');
+      setTimeout(() => {
+        tasks = tasks.filter(t => t.id !== id);
+        save();
+        render();
+      }, 300);
+    }
+  }
+
+  function confetti(event) {
+    const colors = ['#ff4d6d','#7b61ff','#00d4aa','#f0a500','#ff8c42'];
+    const burst = document.createElement('div');
+    burst.className = 'confetti-burst';
+    burst.style.left = (event.clientX - 5) + 'px';
+    burst.style.top  = (event.clientY - 5) + 'px';
+    document.body.appendChild(burst);
+    for (let i = 0; i < 14; i++) {
+      const dot = document.createElement('div');
+      dot.className = 'conf-dot';
+      dot.style.background = colors[i % colors.length];
+      const angle = (i / 14) * 360;
+      const dist  = 40 + Math.random() * 40;
+      const tx = Math.cos(angle * Math.PI / 180) * dist;
+      const ty = Math.sin(angle * Math.PI / 180) * dist - 30;
+      dot.style.setProperty('--tx', tx + 'px');
+      dot.style.setProperty('--ty', ty + 'px');
+      dot.style.setProperty('--rot', (Math.random() * 360) + 'deg');
+      dot.style.animationDelay = (Math.random() * 0.1) + 's';
+      burst.appendChild(dot);
+    }
+    setTimeout(() => burst.remove(), 900);
+  }
+
+  addBtn.addEventListener('click', addTask);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
+
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      filter = btn.dataset.filter;
+      render();
+    });
+  });
+
+  clearBtn.addEventListener('click', () => {
+    tasks = tasks.filter(t => !t.done);
+    save();
+    render();
+  });
+
+  // Seed demo tasks if empty
+  if (tasks.length === 0) {
+    tasks = [
+      { id: '1', text: 'Design the new landing page layout', priority: 'high', done: false, created: Date.now() - 3600000 },
+      { id: '2', text: 'Review pull requests from the team', priority: 'medium', done: true,  created: Date.now() - 7200000 },
+      { id: '3', text: 'Update project documentation', priority: 'low', done: false, created: Date.now() - 1800000 },
+    ];
+    save();
+  }
+
+  render();
+</script>
+</body>
+</html>
